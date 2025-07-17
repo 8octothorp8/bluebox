@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+<head> 
   <meta charset="UTF-8">
   <title>IMDb Code Finder</title>
   <style>
@@ -32,7 +32,7 @@
         // IMDb search URL
         const searchURL = `https://www.imdb.com/find/?q=${encodeURIComponent(query)}&ref_=nv_sr_sm`;
 
-        // Use a CORS proxy
+        // Use a CORS proxy.
         const proxy = 'https://cors-anywhere.herokuapp.com/'; // You may need to visit and "activate" it
         const response = await fetch(proxy + searchURL);
         const html = await response.text();
