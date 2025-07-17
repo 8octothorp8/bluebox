@@ -4,49 +4,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>BLU3BOX</title>
   <style>
-    body {
+    html, body {
+      margin: 0;
+      height: 100%;
       background-color: black;
       color: white;
-      text-align: center;
       font-family: Arial, sans-serif;
-      padding-top: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+    .container {
+      width: 100%;
     }
     img.logo {
-      width: 250px;
-      margin-bottom: 2rem;
+      width: 500px;
+      margin-bottom: 4rem;
     }
-    .toggle-btn {
-      background: black;
-      border: 2px solid #00aaff;
-      color: white;
-      padding: 0.5rem 1rem;
-      margin: 0.5rem;
-      cursor: pointer;
-      font-size: 1.1rem;
-      box-shadow: 0 0 10px #00aaff;
-    }
-    .toggle-btn.active {
-      background: white;
-      color: black;
-    }
-    .search-container {
-      margin-top: 2rem;
-      display: none;
-    }
-    .search-bar {
-      padding: 0.5rem;
+    .search-input, .year-input {
+      padding: 1rem;
+      font-size: 2rem;
       width: 60%;
-      max-width: 400px;
-      font-size: 1rem;
+      max-width: 800px;
+      margin-bottom: 2rem;
+      box-sizing: border-box;
+    }
+    .year-input {
+      width: 120px;
+      margin-left: 1rem;
     }
     .search-button {
-      padding: 0.5rem;
-      cursor: pointer;
-      font-size: 1rem;
-      margin-left: -2rem;
-      background: none;
-      border: none;
+      font-size: 2rem;
+      padding: 1rem 2rem;
+      background-color: #00aaff;
       color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 2rem;
+    }
+    .tv-controls {
+      margin-top: 2rem;
+    }
+    .tv-controls input {
+      font-size: 1.5rem;
+      width: 80px;
+      text-align: center;
+      margin: 0 10px;
     }
     .embed-container {
       margin-top: 2rem;
@@ -56,80 +60,69 @@
       height: 500px;
       border: none;
     }
-    .tv-controls {
-      margin-top: 1rem;
-      display: none;
-    }
-    .tv-controls input {
-      width: 50px;
-      margin: 0 10px;
-      font-size: 1rem;
-      text-align: center;
-    }
   </style>
 </head>
 <body>
-  <img src="https://tikolu.net/i/cazkt" class="logo" alt="BLU3BOX Logo">
-  <div>
-    <button class="toggle-btn" id="movieBtn">Movie</button>
-    <button class="toggle-btn" id="tvBtn">TV Show</button>
-  </div>  <div class="search-container" id="searchContainer">
-    <input type="text" id="searchInput" class="search-bar" placeholder="Search...">
-    <button class="search-button" onclick="searchOMDb()">🔍</button>
-  </div>  <div class="tv-controls" id="tvControls">
-    Season: <input type="number" id="seasonInput" value="1" min="1">
-    Episode: <input type="number" id="episodeInput" value="1" min="1">
-  </div>  <div class="embed-container" id="embedContainer"></div>  <script>
-    const movieBtn = document.getElementById('movieBtn');
-    const tvBtn = document.getElementById('tvBtn');
-    const searchContainer = document.getElementById('searchContainer');
-    const tvControls = document.getElementById('tvControls');
+  <div class="container">
+    <img src="https://tikolu.net/i/cazkt" class="logo" alt="BLU3BOX Logo"><div>
+  <input type="text" id="searchInput" class="search-input" placeholder="Search title...">
+  <input type="text" id="yearInput" class="year-input" placeholder="Year (opt)">
+  <br>
+  <button class="search-button" onclick="searchOMDb()">Search</button>
+</div>
+
+<div class="tv-controls" id="tvControls" style="display: none;">
+  Season: <input type="number" id="seasonInput" value="1" min="1">
+  Episode: <input type="number" id="episodeInput" value="1" min="1">
+</div>
+
+<div class="embed-container" id="embedContainer"></div>
+
+  </div>  <script>
     const embedContainer = document.getElementById('embedContainer');
-
-    let selectedMode = null;
+    const tvControls = document.getElementById('tvControls');
     let mediaid = null;
-
-    movieBtn.onclick = () => toggleMode('movie');
-    tvBtn.onclick = () => toggleMode('tv');
-
-    function toggleMode(mode) {
-      selectedMode = mode;
-      movieBtn.classList.toggle('active', mode === 'movie');
-      tvBtn.classList.toggle('active', mode === 'tv');
-      searchContainer.style.display = 'block';
-      tvControls.style.display = mode === 'tv' ? 'block' : 'none';
-      embedContainer.innerHTML = '';
-    }
 
     async function searchOMDb() {
       const query = document.getElementById('searchInput').value.trim();
+      const year = document.getElementById('yearInput').value.trim();
       if (!query) return;
 
       const apiKey = 'f9948667';
-      const url = `https://www.omdbapi.com/?t=${encodeURIComponent(query)}&apikey=${apiKey}`;
+      let url = `https://www.omdbapi.com/?t=${encodeURIComponent(query)}&plot=full&apikey=${apiKey}`;
+      if (year) {
+        url += `&y=${year}`;
+      }
+
       const res = await fetch(url);
       const data = await res.json();
 
       if (data.Response === 'True') {
         mediaid = data.imdbID;
-        updateEmbed();
+        const type = data.Type; // 'movie' or 'series'
+
+        if (type === 'movie') {
+          tvControls.style.display = 'none';
+          embedContainer.innerHTML = `<iframe src="https://vidfast.pro/movie/${mediaid}?autoPlay=true" allowfullscreen></iframe>`;
+        } else if (type === 'series') {
+          tvControls.style.display = 'block';
+          updateTVEmbed();
+        } else {
+          embedContainer.innerHTML = '<p>Unsupported media type.</p>';
+        }
       } else {
         embedContainer.innerHTML = '<p>❌ Not found.</p>';
       }
     }
 
-    function updateEmbed() {
+    function updateTVEmbed() {
       if (!mediaid) return;
-      if (selectedMode === 'movie') {
-        embedContainer.innerHTML = `<iframe src="https://vidfast.pro/movie/${mediaid}?autoPlay=true" allowfullscreen></iframe>`;
-      } else if (selectedMode === 'tv') {
-        const season = document.getElementById('seasonInput').value;
-        const episode = document.getElementById('episodeInput').value;
-        embedContainer.innerHTML = `<iframe src="https://vidfast.pro/tv/${mediaid}/${season}/${episode}?autoPlay=true" allowfullscreen></iframe>`;
-      }
+      const season = document.getElementById('seasonInput').value;
+      const episode = document.getElementById('episodeInput').value;
+      embedContainer.innerHTML = `<iframe src="https://vidfast.pro/tv/${mediaid}/${season}/${episode}?autoPlay=true" allowfullscreen></iframe>`;
     }
 
-    document.getElementById('seasonInput').addEventListener('input', updateEmbed);
-    document.getElementById('episodeInput').addEventListener('input', updateEmbed);
+    document.getElementById('seasonInput').addEventListener('input', updateTVEmbed);
+    document.getElementById('episodeInput').addEventListener('input', updateTVEmbed);
   </script></body>
-  </html>
+</html>
