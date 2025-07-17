@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>IMDb Code Finder</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 500px;
+      margin: 50px auto;
+    }
+    input, button {
+      padding: 10px;
+      width: 100%;
+      margin-top: 10px;
+      font-size: 1rem;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h2>IMDb Code Finder</h2>
+  <input type="text" id="query" placeholder="Enter movie or show name..." />
+  <button onclick="searchIMDb()">Search</button>
+  <div id="result"></div>
+
+  <script>
+    async function searchIMDb() {
+      const query = document.getElementById('query').value.trim();
+      if (!query) return;
+
+      const encodedQuery = encodeURIComponent(query);
+      const searchUrl = `https://corsproxy.io/?https://www.imdb.com/find/?q=${encodedQuery}`;
+
+      document.getElementById('result').innerText = 'Searching...';
+
+      try {
+        const res = await fetch(searchUrl);
+        const html = await res.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+
+        const firstResult = doc.querySelector('.findList .findResult a');
+        if (!firstResult) {
+          document.getElementById('result').innerText = 'No results found.';
+          return;
+        }
+
+        const href = firstResult.getAttribute('href');
+        const match = href.match(/\/title\/(tt\d+)/);
+        if (match) {
+          document.getElementById('result').innerText = `IMDb Code: ${match[1]}`;
+        } else {
+          document.getElementById('result').innerText = 'IMDb code not found.';
+        }
+      } catch (error) {
+        console.error(error);
+        document.getElementById('result').innerText = 'Error fetching IMDb data.';
+      }
+    }
+  </script>
+</body>
+</html>
