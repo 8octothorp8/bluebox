@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
   <meta charset="UTF-8">
-  <title>IMDb Code Finder</title>
+  <title>IMDb Code Finder (OMDb)</title>
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: 2rem auto; padding: 1rem; }
     input, button { font-size: 1rem; padding: 0.5rem; }
@@ -13,14 +13,16 @@
   <h1>IMDb Code Finder</h1>
   <p>Enter a movie or TV show name:</p>
   <input type="text" id="search" placeholder="e.g. The Emoji Movie">
-  <button onclick="searchIMDb()">Search</button>
+  <button onclick="searchOMDb()">Search</button>
 
   <div id="result"></div>
 
   <script>
-    async function searchIMDb() {
+    async function searchOMDb() {
       const query = document.getElementById('search').value.trim();
+      const apiKey = 'f9948667'; // Replace with your real OMDb key
       const resultDiv = document.getElementById('result');
+
       if (!query) {
         resultDiv.textContent = 'Please enter a search term.';
         return;
@@ -29,25 +31,20 @@
       resultDiv.textContent = 'Searching...';
 
       try {
-        // IMDb search URL
-        const searchURL = `https://www.imdb.com/find/?q=${encodeURIComponent(query)}&ref_=nv_sr_sm`;
+        const url = `https://www.omdbapi.com/?t=${encodeURIComponent(query)}&apikey=${apiKey}`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-        // Use a CORS proxy.
-        const proxy = 'https://cors-anywhere.herokuapp.com/'; // You may need to visit and "activate" it
-        const response = await fetch(proxy + searchURL);
-        const html = await response.text();
-
-        // Extract first title link (starts with /title/ttXXXXXXX/)
-        const match = html.match(/\/title\/(tt\d{7,8})\//);
-        if (match && match[1]) {
-          const imdbID = match[1];
-          resultDiv.innerHTML = `✅ IMDb ID: <code>${imdbID}</code><br><a href="https://www.imdb.com/title/${imdbID}/" target="_blank">View on IMDb</a>`;
+        if (data.Response === "True") {
+          const imdbID = data.imdbID;
+          resultDiv.innerHTML = `✅ IMDb ID: <code>${imdbID}</code><br>
+            <a href="https://www.imdb.com/title/${imdbID}/" target="_blank">View on IMDb</a>`;
         } else {
-          resultDiv.textContent = '❌ No IMDb ID found.';
+          resultDiv.textContent = '❌ Not found. Try a more specific title.';
         }
       } catch (err) {
         console.error(err);
-        resultDiv.innerHTML = '⚠️ Error fetching IMDb. You may need to activate the <a href="https://cors-anywhere.herokuapp.com/" target="_blank">CORS proxy</a>.';
+        resultDiv.textContent = '⚠️ Error fetching data from OMDb.';
       }
     }
   </script>
