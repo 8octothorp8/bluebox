@@ -6,60 +6,55 @@
   <style>
     body {
       font-family: sans-serif;
-      max-width: 500px;
-      margin: 50px auto;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
     }
     input, button {
-      padding: 10px;
-      width: 100%;
-      margin-top: 10px;
+      padding: 0.5rem;
       font-size: 1rem;
     }
     #result {
-      margin-top: 20px;
+      margin-top: 1rem;
       font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h2>IMDb Code Finder</h2>
-  <input type="text" id="query" placeholder="Enter movie or show name..." />
+  <h1>IMDb Code Finder</h1>
+  <p>Enter a movie or TV show name:</p>
+  <input type="text" id="search" placeholder="e.g. The Emoji Movie">
   <button onclick="searchIMDb()">Search</button>
+
   <div id="result"></div>
 
   <script>
     async function searchIMDb() {
-      const query = document.getElementById('query').value.trim();
+      const query = document.getElementById('search').value.trim();
       if (!query) return;
 
-      const encodedQuery = encodeURIComponent(query);
-      const searchUrl = `https://corsproxy.io/?https://www.imdb.com/find/?q=${encodedQuery}`;
-
-      document.getElementById('result').innerText = 'Searching...';
+      const resultDiv = document.getElementById('result');
+      resultDiv.textContent = 'Searching...';
 
       try {
-        const res = await fetch(searchUrl);
-        const html = await res.text();
+        // Use a CORS proxy to fetch IMDb search results
+        const corsProxy = 'https://cors-anywhere.herokuapp.com/';
+        const searchURL = `https://www.imdb.com/find/?q=${encodeURIComponent(query)}&ref_=nv_sr_sm`;
 
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
+        const res = await fetch(corsProxy + searchURL);
+        const text = await res.text();
 
-        const firstResult = doc.querySelector('.findList .findResult a');
-        if (!firstResult) {
-          document.getElementById('result').innerText = 'No results found.';
-          return;
-        }
-
-        const href = firstResult.getAttribute('href');
-        const match = href.match(/\/title\/(tt\d+)/);
-        if (match) {
-          document.getElementById('result').innerText = `IMDb Code: ${match[1]}`;
+        // Extract the first title link
+        const match = text.match(/\/title\/(tt\d{7,8})\//);
+        if (match && match[1]) {
+          const imdbID = match[1];
+          resultDiv.innerHTML = `✅ IMDb ID: <code>${imdbID}</code><br><a href="https://www.imdb.com/title/${imdbID}/" target="_blank">Open on IMDb</a>`;
         } else {
-          document.getElementById('result').innerText = 'IMDb code not found.';
+          resultDiv.textContent = '❌ No result found.';
         }
-      } catch (error) {
-        console.error(error);
-        document.getElementById('result').innerText = 'Error fetching IMDb data.';
+      } catch (err) {
+        console.error(err);
+        resultDiv.textContent = '⚠️ Error occurred. Maybe CORS proxy failed.';
       }
     }
   </script>
